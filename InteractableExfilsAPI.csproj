@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -7,12 +7,25 @@
     <OutputType>Library</OutputType>
     <RootNamespace>InteractableExfilsAPI</RootNamespace>
     <AssemblyName>InteractableExfilsAPI</AssemblyName>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <LangVersion>latest</LangVersion>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
-    <PathToSPT>..\..</PathToSPT>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <!--
+    PathToSPT was "..\.." - the project only resolved anything when the repository sat
+    exactly two levels inside an SPT install. SptRoot replaces it and can be overridden
+    with -p:SptRoot=... or an SptRoot environment variable; PathToSPT is kept as an alias
+    so an existing checkout that already passes it keeps working.
+  -->
+  <PropertyGroup>
+    <SptRoot Condition=" '$(SptRoot)' == '' And '$(PathToSPT)' != '' ">$(PathToSPT)</SptRoot>
+    <SptRoot Condition=" '$(SptRoot)' == '' ">E:\SPT 4.1</SptRoot>
+    <PathToSPT>$(SptRoot)</PathToSPT>
   </PropertyGroup>
 
   <!-- BepInEx -->
@@ -87,7 +100,19 @@
 
   <PropertyGroup />
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="set MOD_DIR=$(ProjectDir)\..\..\BepInEx\plugins\$(AssemblyName)&#xD;&#xA;if not exist &quot;%25MOD_DIR%25&quot; mkdir &quot;%25MOD_DIR%25&quot;&#xD;&#xA;copy &quot;$(TargetPath)&quot; &quot;%25MOD_DIR%25\$(TargetFileName)&quot;&#xD;&#xA;copy &quot;$(ProjectDir)LICENSE.txt&quot; &quot;%25MOD_DIR%25&quot;" />
+  <Target Name="EnsureSptRoot" BeforeTargets="BeforeBuild;ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(SptRoot)\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll')"
+           Text="SptRoot '$(SptRoot)' does not look like an SPT install (missing EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll). Pass -p:SptRoot=... or set the SptRoot environment variable." />
   </Target>
+
+  <!--
+    Was a cmd one-liner in an Exec task, so it did nothing anywhere but Windows and
+    reported success while doing it. MSBuild Copy does the same job on any host.
+  -->
+  <Target Name="CopyToSPT" AfterTargets="Build" Condition="Exists('$(SptRoot)')">
+    <MakeDir Directories="$(SptRoot)\BepInEx\plugins\$(AssemblyName)" />
+    <Copy SourceFiles="$(TargetPath);$(ProjectDir)LICENSE.txt"
+          DestinationFolder="$(SptRoot)\BepInEx\plugins\$(AssemblyName)" />
+  </Target>
+
 </Project>
