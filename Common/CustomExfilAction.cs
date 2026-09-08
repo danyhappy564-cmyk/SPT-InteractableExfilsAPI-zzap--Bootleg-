@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using EFT.UI;
 
 namespace InteractableExfilsAPI.Common
 {
@@ -44,9 +45,9 @@ namespace InteractableExfilsAPI.Common
             Action = action;
         }
 
-        public ActionsTypesClass GetActionsTypesClass()
+        public InteractionAction GetInteractionAction()
         {
-            return new ActionsTypesClass
+            return new InteractionAction
             {
                 Action = Action,
                 Name = GetName(),
@@ -54,13 +55,13 @@ namespace InteractableExfilsAPI.Common
             };
         }
 
-        public static List<ActionsTypesClass> GetActionsTypesClassList(List<CustomExfilAction> CustomExfilActionList)
+        public static List<InteractionAction> GetInteractionActionList(List<CustomExfilAction> CustomExfilActionList)
         {
-            List<ActionsTypesClass> actionsTypesClassList = new List<ActionsTypesClass>();
+            List<InteractionAction> actionsTypesClassList = new List<InteractionAction>();
 
             foreach (CustomExfilAction CustomExfilAction in CustomExfilActionList)
             {
-                actionsTypesClassList.Add(CustomExfilAction.GetActionsTypesClass());
+                actionsTypesClassList.Add(CustomExfilAction.GetInteractionAction());
             }
 
             return actionsTypesClassList;

@@ -19,24 +19,24 @@ namespace InteractableExfilsAPI.Patches
         protected override MethodBase GetTargetMethod()
         {
             _getExfiltrationActions = AccessTools.FirstMethod(
-                typeof(GetActionsClass),
+                typeof(InteractionContextHelper),
                 method =>
                 method.GetParameters()[0].Name == "owner" &&
                 method.GetParameters()[1].ParameterType == typeof(ExfiltrationPoint)
             );
 
             _getSwitchActions = AccessTools.FirstMethod(
-                typeof(GetActionsClass),
+                typeof(InteractionContextHelper),
                 method =>
                 method.GetParameters()[0].Name == "owner" &&
                 method.GetParameters()[1].ParameterType == typeof(Switch)
             );
 
-            return AccessTools.FirstMethod(typeof(GetActionsClass), method => method.Name == nameof(GetActionsClass.GetAvailableActions) && method.GetParameters()[0].Name == "owner");
+            return AccessTools.FirstMethod(typeof(InteractionContextHelper), method => method.Name == nameof(InteractionContextHelper.GetAvailableActions) && method.GetParameters()[0].Name == "owner");
         }
 
         [PatchPrefix]
-        protected static bool PatchPrefix(object[] __args, ref ActionsReturnClass __result)
+        protected static bool PatchPrefix(object[] __args, ref AvailableInteractionState __result)
         {
             var owner = __args[0] as GamePlayerOwner;
             var interactive = __args[1]; // as GInterface139 as of SPT 3.10.3
@@ -50,9 +50,9 @@ namespace InteractableExfilsAPI.Patches
                     return true;
                 }
 
-                List<ActionsTypesClass> vanillaActions = GetVanillaInteractionActions(owner, interactive);
+                List<InteractionAction> vanillaActions = GetVanillaInteractionActions(owner, interactive);
                 CustomExfilTrigger customTrigger = CreateCustomExfilTrigger(exfil, vanillaActions);
-                ActionsReturnClass prompt = customTrigger.CreateExfilPrompt();
+                AvailableInteractionState prompt = customTrigger.CreateExfilPrompt();
 
                 __result = prompt;
                 return false;
@@ -88,7 +88,7 @@ namespace InteractableExfilsAPI.Patches
             return null;
         }
 
-        private static List<ActionsTypesClass> GetVanillaInteractionActions(GamePlayerOwner gamePlayerOwner, object interactive)
+        private static List<InteractionAction> GetVanillaInteractionActions(GamePlayerOwner gamePlayerOwner, object interactive)
         {
             if (InteractableExfilsService.Instance().DisableVanillaActions)
             {
@@ -107,11 +107,11 @@ namespace InteractableExfilsAPI.Patches
                 methodInfo = _getSwitchActions;
             }
 
-            List<ActionsTypesClass> vanillaExfilActions = ((ActionsReturnClass)methodInfo.Invoke(null, args))?.Actions;
+            List<InteractionAction> vanillaExfilActions = ((AvailableInteractionState)methodInfo.Invoke(null, args))?.Actions;
             return vanillaExfilActions ?? [];
         }
 
-        private static CustomExfilTrigger CreateCustomExfilTrigger(ExfiltrationPoint exfil, List<ActionsTypesClass> vanillaActions)
+        private static CustomExfilTrigger CreateCustomExfilTrigger(ExfiltrationPoint exfil, List<InteractionAction> vanillaActions)
         {
             // Create a new GameObject to attach the MonoBehaviour
             GameObject customTriggerObject = new GameObject("CustomExfilTrigger");
@@ -122,7 +122,7 @@ namespace InteractableExfilsAPI.Patches
             bool exfilIsActiveToPlayer = true;
             customTrigger.Init(exfil, exfilIsActiveToPlayer, vanillaActions);
 
-            string message = $"GetActionsClassWithCustomActions called for exfil {exfil.Settings.Name}!\n";
+            string message = $"InteractionContextHelperWithCustomActions called for exfil {exfil.Settings.Name}!\n";
             ConsoleScreen.Log(message);
             Plugin.LogSource.LogInfo(message);
 
